@@ -56,6 +56,30 @@ def groupData(data, field):
 ```
 
 ```{python}
+splited_train = groupData(train,['pid','size'])
+```
+
+```{python}
+splited_items = groupData(items,['brand'])
+```
+
+```{python}
+splited_train[1]
+```
+
+```{python}
+items[(items["pid"]==splited_train[1].iloc[0]['pid']) & (items["size"]==splited_train[1].iloc[0]['size'])]
+```
+
+```{python}
+sizes = items['size']
+```
+
+```{python}
+train
+```
+
+```{python}
 #remove parenteses e escolhe a melhor representação de tamanho
 new_sizes = []
 sizes_letters = ['XS','S','M','L','XL']
@@ -98,7 +122,7 @@ for i in range(len(frac_sizes)):
 ```
 
 ```{python}
-#hf_sizes # tem coisa separada por virgula e outras por ponto.
+hf_sizes # tem coisa separada por virgula e outras por ponto.
          # tem fração ainda ex: 164/176.
          # tamanhos com string, como Junior,Senior
 ```
@@ -131,60 +155,30 @@ def insert_column (data,fields,fields_name):
 ```
 
 ```{python}
-items
+datas = []
+
+for product in splited_train:
+    data_i = product[['pid','size']].iloc[0]
+    
+    # variaveis primárias
+    data_i['units'] = sum(product['units'])
+    
+    #importando dados da outra tabela
+    dados = items[(items["pid"]==data_i['pid']) & (items["size"]==data_i['size'])]
+    data_i = pd.concat([data_i, dados[['color','brand','rrp','mainCategory','category','subCategory']].iloc[0]])
+
+    #target
+    data_i['target'] = int(re.search(regex, product["date"].iloc[-1]).group(2))
+    
+    datas.append(data_i)
 ```
 
 ```{python}
-train
+data = pd.DataFrame(data = datas)
 ```
 
 ```{python}
-x = train.groupby(['pid','size','month']).tail(1).sort_values(by=['pid']).drop(['units'], axis=1)
-```
-
-```{python}
-grouped = train.groupby(['pid','size','month']).sum()
-```
-
-```{python}
-grouped
-```
-
-```{python}
-grouped.index = x.index
-```
-
-```{python}
-#x['units'] = grouped['units']
-```
-
-```{python}
-x = x.sort_values(by=['pid','month'])
-```
-
-```{python}
-data = pd.merge(items.drop(['stock'], axis=1), x, on=['pid','size'])
-```
-
-```{python}
-data
-```
-
-```{python}
-
-```
-
-```{python}
-data['units'] = grouped['units'].values
-```
-
-```{python}
-from datetime import datetime
-data['target'] = data['date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d').day)
-```
-
-```{python}
-data = data.drop(['date'], axis=1)
+# data[data['release'] == 0]
 ```
 
 ```{python}
@@ -222,19 +216,35 @@ data = data.drop(['color'], axis=1)
 data = data.drop(['pid'], axis=1)
 data = data.drop(['brand'], axis=1)
 data = data.drop(['size'], axis=1)
-data = data.drop(['releaseDate'], axis=1)
 ```
 
 ```{python}
-data_test = data[data['month'] == '2018-01']
-data_test = data_test.drop(['month'], axis=1)
-y_test = data_test.iloc[:,-1]
-x_test = data_test.iloc[:,0:-1]
+f_sizes = pd.DataFrame(data = f_sizes, columns = ['size'])
 
-data_train = data[data['month'] != '2018-01']
-data_train = data_train.drop(['month'], axis=1)
-y_train = data_train.iloc[:,-1]
-x_train = data_train.iloc[:,0:-1]
+```
+
+```{python}
+f_sizes
+```
+
+```{python}
+#data = f_sizes.join(data)
+```
+
+```{python}
+#data_test = data[data['month'] == '2018-01']
+#data_test = data_test.drop(['month'], axis=1)
+from sklearn.model_selection import train_test_split
+
+x_train, x_test, y_train, y_test = train_test_split(data[:,0:-1], data[:,-1], test_size=0.33, random_state=42)
+
+# y_test = data_test.iloc[:,-1]
+# x_test = data_test.iloc[:,0:-1]
+
+# #data_train = data[data['month'] != '2018-01']
+# #data_train = data_train.drop(['month'], axis=1)
+# y_train = data_train.iloc[:,-1]
+# x_train = data_train.iloc[:,0:-1]
 ```
 
 ```{python}
